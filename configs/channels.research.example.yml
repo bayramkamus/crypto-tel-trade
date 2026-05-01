@@ -1,0 +1,20 @@
+# Example channel list used for the bundled sample research data.
+# You can start with this list, remove channels, or add your own channels.
+channels:
+  - wallstreetqueenofficial
+  - cryptoninjas_trading_ann
+  - binancekillers
+  - EveningTrader
+  - Bitcoin_BulletsSignals
+  - Crypto_Whales_Pumps_Guide
+  - Classic_Coincodecap
+  - BitcoinBullets
+  - Wall_Street_Queen_Official0
+  - Wolfx_Signals9
+  - crypto_pumps_p
+  - FedRussianInsiders
+  - ThomasSign
+  - Fed_Russian_InsidersOfficial
+
+backfill_days: 30
+

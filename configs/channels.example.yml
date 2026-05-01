@@ -1,0 +1,10 @@
+# Takip etmek istediginiz Telegram kanal veya grup username'leri.
+# Basinda @ kullanmaniz gerekmez.
+channels:
+  - binancekillers
+  - BitcoinBullets
+  - example_channel_name
+
+# Ilk calistirmada geriye donuk kac gunluk mesaj cekilecek.
+backfill_days: 30
+

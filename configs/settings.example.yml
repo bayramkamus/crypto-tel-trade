@@ -1,0 +1,11 @@
+# Optional settings file for future app-level configuration.
+# Current public version primarily reads .env and configs/channels.yml.
+
+database:
+  pump_research_path: pump_research.db
+  backtest_results_path: backtest_results.db
+
+live:
+  enable_chart_pattern: true
+  dedup_seconds: 1800
+

@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Secrets
+.env
+*.session
+*.session-journal
+
+# Data and generated outputs
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.xlsx
+*.csv
+generated_charts/
+tmp*/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+

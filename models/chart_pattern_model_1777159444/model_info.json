@@ -1,0 +1,17 @@
+{
+  "name": "chart_pattern_model",
+  "run_id": "1777159444",
+  "checkpoint": "checkpoint.pt",
+  "architecture": "efficientnet_b0_multi_head",
+  "input_size": [224, 224],
+  "color_mode": "RGB",
+  "normalization": {
+    "mean": [0.485, 0.456, 0.406],
+    "std": [0.229, 0.224, 0.225]
+  },
+  "outputs": {
+    "pattern": "detected_pattern",
+    "signal": "BUY_SELL_NEUTRAL"
+  },
+  "source_checkpoint": "runs/torch_baseline/1777159444/checkpoint.pt"
+}
