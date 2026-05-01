@@ -43,7 +43,7 @@ provider immediately.
 ## Installation
 
 ```bash
-git clone https://github.com/YOUR_USER/telegram-signal-analyzer.git
+git clone https://github.com/bayramkamus/crypto-tel-trade.git
 cd telegram-signal-analyzer
 
 python -m venv .venv
