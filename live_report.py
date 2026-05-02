@@ -45,7 +45,6 @@ log = logging.getLogger(__name__)
 
 def _get_smtp_config() -> dict | None:
     """SMTP ayarlarını .env'den okur."""
-    # Use an app password, not your normal email password.
     host = os.environ.get("SMTP_HOST")
     user = os.environ.get("SMTP_USER")
     pwd  = os.environ.get("SMTP_PASS")
@@ -85,6 +84,9 @@ def _action_color(action: str) -> str:
         "AL": "#22aa44",
         "SAT": "#ff8844",
         "TUT": "#ffaa00",
+        "UYGULANABİLİR": "#22aa44",
+        "ZAYIF KARAR": "#ffaa00",
+        "ATLA": "#ff5555",
     }.get(action, "#aaaaaa")
 
 
@@ -142,7 +144,12 @@ def _build_decision_html(decision_data: dict | None) -> str:
         return ""
 
     status = decision_data.get("status")
-    action = decision_data.get("action", "TUT")
+    model_decision = decision_data.get("model_decision")
+    action = {
+        "EXECUTE": "UYGULANABİLİR",
+        "CAUTION": "ZAYIF KARAR",
+        "SKIP": "ATLA",
+    }.get(model_decision, decision_data.get("action", "TUT"))
     color = _action_color(action)
     reliability = decision_data.get("reliability", {})
     snapshots = decision_data.get("snapshots", {})
@@ -178,7 +185,7 @@ def _build_decision_html(decision_data: dict | None) -> str:
         <h3 style="color:#e0e0e0;margin:0 0 12px 0;">Karar Analizi</h3>
         <table style="width:100%;color:#ccc;font-size:14px;">
             <tr>
-                <td style="padding:4px 0;">Al/Sat/Tut</td>
+                <td style="padding:4px 0;">Karar</td>
                 <td style="text-align:right;font-weight:bold;font-size:22px;color:{color};">
                     {action}
                 </td>
