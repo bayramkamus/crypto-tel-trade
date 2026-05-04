@@ -183,8 +183,17 @@ python model_manager.py --retrain
 
 ## Live Email Reports
 
-The live collector can send email reports when a new live Telegram signal is
+The live collector can send an email report when a new live Telegram signal is
 detected. Configure SMTP in `.env` first.
+
+A live email report can include:
+
+- the original Telegram signal message,
+- extracted ticker and source channel,
+- decision model output, when a saved model is available,
+- indicator snapshots for short-term market context,
+- volume anomaly analysis,
+- optional 15m chart pattern result and chart image.
 
 The saved decision model is loaded from:
 
