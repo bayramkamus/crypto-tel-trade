@@ -8,10 +8,10 @@ Her canlı sinyal sonrası:
   4. Email ile gönderir (SMTP)
 
 Config (.env):
-    REPORT_EMAIL_TO=your-target-email@example.com
+    REPORT_EMAIL_TO=bayramkamus@gmail.com
     SMTP_HOST=smtp.gmail.com
     SMTP_PORT=587
-    SMTP_USER=your-sender-email@example.com
+    SMTP_USER=bayramkamus@gmail.com
     SMTP_PASS=xxxx-xxxx-xxxx-xxxx     # Gmail App Password
     SMTP_USE_TLS=true
 
@@ -427,44 +427,7 @@ def _build_html_report(
         </div>
         """
 
-    # Scraping sonuçları
-    scraping_html = ""
-    if scraping_result:
-        resolved = scraping_result.get("resolved", False)
-        news_count = scraping_result.get("news", 0)
-        event_count = scraping_result.get("events", 0)
-        trend_count = scraping_result.get("trends", 0)
-        error = scraping_result.get("error")
-
-        status_color = "#22aa44" if resolved else "#ff4444"
-        status_text = "Çözümlendi" if resolved else f"Başarısız ({error})"
-
-        scraping_html = f"""
-        <div style="background:#1a1a2e;border-radius:8px;padding:16px;margin:12px 0;">
-            <h3 style="color:#e0e0e0;margin:0 0 12px 0;">🔍 Scraping Sonuçları</h3>
-            <table style="width:100%;color:#ccc;font-size:14px;">
-                <tr>
-                    <td style="padding:4px 0;">Coin Durumu</td>
-                    <td style="text-align:right;color:{status_color};font-weight:bold;">
-                        {status_text}
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding:4px 0;">Haberler</td>
-                    <td style="text-align:right;color:white;">{news_count}</td>
-                </tr>
-                <tr>
-                    <td style="padding:4px 0;">Etkinlikler/Duyurular</td>
-                    <td style="text-align:right;color:white;">{event_count}</td>
-                </tr>
-                <tr>
-                    <td style="padding:4px 0;">Trends Noktaları</td>
-                    <td style="text-align:right;color:white;">{trend_count}</td>
-                </tr>
-            </table>
-        </div>
-        """
-
+  
     # Mesaj metni (kısa)
     msg_display = message_text[:500].replace("\n", "<br>") if message_text else "—"
     decision_html = _build_decision_html(decision_data)
@@ -512,7 +475,7 @@ def _build_html_report(
 
             {vol_html}
 
-            {scraping_html}
+            
 
             <!-- Footer -->
             <div style="text-align:center;padding:16px;color:#666;font-size:11px;">

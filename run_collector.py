@@ -29,10 +29,7 @@ def main():
         "--no-backfill", action="store_true",
         help="Gecmis mesajlari cekme, sadece canli dinle",
     )
-    parser.add_argument(
-        "--no-scraping", action="store_true",
-        help="Scraping pipeline'a mesaj iletme, sadece DB'ye yaz",
-    )
+    
     parser.add_argument(
         "--db", default=None,
         help="pump_research.db yolu (varsayilan: config.DB_PATH)",
@@ -77,7 +74,6 @@ def main():
     collector = LiveCollector(
         db_path=args.db,
         do_backfill=not args.no_backfill,
-        forward_scraping=not args.no_scraping,
         relay_mode=args.relay,
         relay_url=relay_url if args.relay else None,
         relay_token=relay_token if args.relay else None,

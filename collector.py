@@ -22,6 +22,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
 
 from telethon import TelegramClient, events
+from scraping.ticker_parser import extract_ticker
 
 import config
 
@@ -32,8 +33,8 @@ import config
 # Aynı ticker bu süre (saniye) içinde tekrar gelirse pipeline atlanır
 LIVE_DEDUP_SECS = 1800   # 30 dakika
 
-# Scraping çıktı DB (scraping.collect ile aynı varsayılan)
-SCRAPING_OUT_DB = "scraping_data.db"
+
+
 
 # Live modda Google Trends atlanır (her coin ~30s gecikme yaratır)
 LIVE_SKIP_TRENDS = True
@@ -150,22 +151,10 @@ def _get_last_message_ts(conn: sqlite3.Connection, channel_id: int) -> datetime 
 # SCRAPING PIPELINE ENTEGRASYONU
 # ─────────────────────────────────────────────────────────────────
 
-_scraping_available = False
-_pipeline_available = False
 
-try:
-    from scraping import db as scrapdb
-    from scraping.ticker_parser import extract_ticker
-    _scraping_available = True
-except ImportError:
-    log.warning("scraping paketi bulunamadi — sadece DB'ye yazma modu.")
-    extract_ticker = None  # type: ignore
 
-try:
-    from scraping.collect import process_coin, store_telegram_message
-    _pipeline_available = True
-except ImportError:
-    log.warning("scraping.collect import edilemedi — tam pipeline devre disi.")
+
+
 
 # Volume anomali
 _volume_available = False
@@ -194,30 +183,15 @@ except ImportError as e:
 
 # Canli 15m chart pattern modeli
 _chart_pattern_available = False
-_chart_pattern_enabled = os.environ.get("ENABLE_CHART_PATTERN", "true").lower() not in {
-    "0", "false", "no", "off"
-}
 try:
-    if _chart_pattern_enabled:
-        from chart_pattern_live import analyze_chart_pattern
-        _chart_pattern_available = True
-    else:
-        log.info("chart pattern devre disi (ENABLE_CHART_PATTERN=false).")
+    from chart_pattern_live import analyze_chart_pattern
+    _chart_pattern_available = True
 except ImportError as e:
     log.warning(f"chart_pattern_live modulu bulunamadi - chart pattern devre disi: {e}")
 
 
-def _forward_to_scraping(ticker: str, text: str, msg_url: str):
-    """
-    Cikarilan ticker'i scraping pipeline'a iletir.
-    Tüm yazma mantığı scraping.collect.store_telegram_message'a devredilir.
-    """
-    if not _pipeline_available:
-        return
-    try:
-        store_telegram_message(ticker, text, msg_url, SCRAPING_OUT_DB)
-    except Exception as e:
-        log.error(f"[scraping] {ticker} isleme hatasi: {e}")
+
+  
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -241,14 +215,12 @@ class LiveCollector:
     """
 
     def __init__(self, db_path: str = None, do_backfill: bool = True,
-                 forward_scraping: bool = True,
                  relay_mode: bool = False,
                  relay_url: str = None,
                  relay_token: str = None,
                  relay_batch_size: int = None):
         self.db_path = db_path or config.DB_PATH
         self.do_backfill = do_backfill
-        self.forward_scraping = forward_scraping
         self.relay_mode = relay_mode
 
         # ── Relay modu ────────────────────────────────────────────
@@ -274,11 +246,8 @@ class LiveCollector:
         else:
             self.conn = _init_db(self.db_path)
 
-        if _scraping_available and not self.relay_mode:
-            scrapdb.init_db(SCRAPING_OUT_DB)
+      
 
-        # Telethon creates a .session file after first login.
-        # Treat it like a password and do not share it.
         self.client = TelegramClient(
             config.SESSION, config.API_ID, config.API_HASH
         )
@@ -328,14 +297,12 @@ class LiveCollector:
                 self._relay_periodic_flush(), name="relay-flush"
             )
 
-        # Tam pipeline worker'ı başlat (sadece yerel modda)
-        if not self.relay_mode and _pipeline_available and self.forward_scraping:
+        if not self.relay_mode and (not self._worker_task or self._worker_task.done()):
             self._worker_task = asyncio.create_task(
-                self._scraping_worker(), name="scraping-worker"
-            )
-            log.info("  ✓ Scraping pipeline worker baslatildi")
-        elif not self.relay_mode and not _pipeline_available:
-            log.warning("  ⚠  scraping.collect yok — tam pipeline devre disi")
+            self._scraping_worker(),
+            name="scraping-worker",
+    )
+        
 
         # Canlı dinleme event handler
         chat_entities = [ent for ent, _ in resolved.values()]
@@ -348,11 +315,6 @@ class LiveCollector:
         log.info("═" * 55)
         log.info(f"  CANLI DINLEME AKTIF [{mode_str} MOD]")
         log.info(f"  {len(resolved)} kanal izleniyor")
-        if not self.relay_mode:
-            pipeline_status = "AÇIK" if _pipeline_available else "KAPALI"
-            log.info(f"  Tam scraping pipeline: {pipeline_status}")
-        else:
-            log.info("  Event'ler relay API'ye gönderiliyor")
         log.info("  Durdurmak icin Ctrl+C")
         log.info("═" * 55)
         log.info("")
@@ -517,20 +479,13 @@ class LiveCollector:
             self._live_count += 1
             log.info(f"[{prefix}] @{ch_name} | #{msg.id} | {short_text}")
 
-            if self.forward_scraping and ticker:
-                msg_url = f"https://t.me/{ch_name}/{msg.id}"
-
-                # 1. Telegram mesajını raw_content'e hemen kaydet
-                _forward_to_scraping(ticker, msg.text, msg_url)
-
-                # 2. Sadece CANLI mesajlarda tam pipeline'ı kuyruğa ekle
-                if live and _pipeline_available:
-                    await self._enqueue_ticker(
-                        ticker=ticker,
-                        channel=ch_name,
-                        message_text=msg.text,
-                        timestamp=msg_dict["timestamp"],
-                    )
+        if live and ticker and self._worker_task:
+            await self._enqueue_ticker(
+                ticker=ticker,
+                channel=ch_name,
+                message_text=msg.text,
+                timestamp=msg_dict["timestamp"],
+    )
 
     async def _enqueue_ticker(self, ticker: str, channel: str,
                               message_text: str, timestamp: str):
@@ -602,22 +557,8 @@ class LiveCollector:
             chart_pattern_data = None
 
             try:
-                # ── ADIM 1: Tam scraping pipeline ─────────────────
-                log.info(f"[pipeline] {ticker} → scraping başlıyor...")
-                scraping_result = await loop.run_in_executor(
-                    self._executor,
-                    process_coin,
-                    ticker,
-                    SCRAPING_OUT_DB,
-                    cfg,
-                )
-                log.info(
-                    f"[pipeline] {ticker} scraping OK — "
-                    f"haber={scraping_result.get('news', 0)}  "
-                    f"event={scraping_result.get('events', 0)}  "
-                    f"trends={scraping_result.get('trends', 0)}"
-                )
-
+              
+             
                 # ── ADIM 2: Volume anomali kontrolü ───────────────
                 if _volume_available:
                     log.info(f"[pipeline] {ticker} → volume kontrol...")
@@ -694,7 +635,7 @@ class LiveCollector:
                             ticker,
                             channel,
                             message_text,
-                            scraping_result,
+                            None,
                             volume_data,
                             timestamp,
                             decision_data,
